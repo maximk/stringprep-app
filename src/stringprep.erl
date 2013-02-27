@@ -43,8 +43,6 @@
          code_change/3,
          terminate/2]).
 
--define(STRINGPREP_PORT, stringprep_port).
-
 -define(NAMEPREP_COMMAND, 1).
 -define(NODEPREP_COMMAND, 2).
 -define(RESOURCEPREP_COMMAND, 3).
@@ -56,20 +54,7 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-    DrvPath = case code:priv_dir(stringprep) of
-                {error, _} ->
-                    ".";
-                Path ->
-                    filename:join([Path, "lib"])
-              end,
-    case erl_ddll:load_driver(DrvPath, stringprep_drv) of
-        ok -> ok;
-        {error, already_loaded} -> ok
-    end,
-    Port = open_port({spawn, stringprep_drv}, []),
-    register(?STRINGPREP_PORT, Port),
-    {ok, Port}.
-
+	{ok,[]}.
 
 %%% --------------------------------------------------------
 %%% The call-back functions.
@@ -81,10 +66,6 @@ handle_call(_, _, State) ->
 handle_cast(_, State) ->
     {noreply, State}.
 
-handle_info({'EXIT', Port, Reason}, Port) ->
-    {stop, {port_died, Reason}, Port};
-handle_info({'EXIT', _Pid, _Reason}, Port) ->
-    {noreply, Port};
 handle_info(_, State) ->
     {noreply, State}.
 
@@ -98,22 +79,23 @@ terminate(_Reason, Port) ->
 
 
 tolower(String) ->
+	io:format("//// stringprep:tolower(~s)~n", [String]),
     control(0, String).
 
 nameprep(String) ->
+	io:format("//// stringprep:nameprep(~s)~n", [String]),
     control(?NAMEPREP_COMMAND, String).
 
 nodeprep(String) ->
+	io:format("//// stringprep:nodeprep(~s)~n", [String]),
     control(?NODEPREP_COMMAND, String).
 
 resourceprep(String) ->
+	io:format("//// stringprep:resourceprep(~s)~n", [String]),
     control(?RESOURCEPREP_COMMAND, String).
 
 control(Command, String) ->
-    case port_control(?STRINGPREP_PORT, Command, String) of
-        [0 | _] -> error;
-        [1 | Res] -> Res
-    end.
+	io:format("//// stringprep:control(~w, ~s)~n", [Command,String]),
+	String.	%%XXX
 
-
-
+%%EOF
